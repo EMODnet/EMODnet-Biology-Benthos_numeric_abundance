@@ -1,8 +1,15 @@
-# {{product_name}}
+# Numerical abundance of benthos in North and Baltic Seas
 
 ## Introduction
 
-{{product_introduction}}
+This repository contains the scripts, but not the datasets, used to compile different benthic datasets in this area into a comprehensive summary of available data on abundance and (where available) biomass density.
+
+The code is explained in the R markdown document in the analysis subdirectory. The generated pdf is to be found in the docs directory.
+
+## General procedure in preparing the data product
+
+Data are retrieved by dataset and by year, as explained in the Rmd file. They are then recompiled into a single file by dataset. These files are very big.
+Subsequently the data files per dataset are parsed to extract the abundance and biomass data. Based on the parsed results, a total data file is constructed that contains all relevant records. This dataset is still partially in a 'long' format. There is one record per sample and per species. It can be used to extract data on individual species, or on species groups, and map them. The mapping is not yet part of the set.
 
 ## Directory structure
 

@@ -14,7 +14,6 @@ analysis/*.docx
 analysis/*.pdf
 docs/*.html
 docs/*.docx
-docs/*.pdf
 
 # output files
 output/
@@ -29,3 +28,17 @@ output/
 
 # RStudio
 .Rproj.user
+*.Rproj
+
+# Old datafiles
+analysis/Old_data_preparation/datafiles/*.*
+
+# problem reports
+docs/problem_reports/*.*
+
+# all the large datafiles
+data/
+
+# all products
+product/
+
