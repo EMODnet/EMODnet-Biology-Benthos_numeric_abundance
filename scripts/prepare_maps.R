@@ -43,6 +43,12 @@ events<- trec %>%
 trec <- trec %>%
   left_join(events,by=c("datasetid","datecollected","decimallongitude","decimallatitude",
                         "minimumdepthinmeters","sampid"))
+############################################################
+# Store trec. This is our first data product!
+benth_recs<-trec
+save(benth_recs,file=file.path(mapsDir,"benth_recs.Rdata"))
+write_delim(benth_recs,path=file.path(mapsDir,"benth_recs.csv"),delim=",")
+rm(benth_recs)
 ############ end of the generic part. What follows is a loop over the species ##
 
 spmin<-1
