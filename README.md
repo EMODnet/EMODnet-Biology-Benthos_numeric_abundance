@@ -39,25 +39,33 @@ Subsequently the data files per dataset are parsed to extract the abundance and 
 
 ## Data series
 
-
-
 Data used in this product are:
 
 MAREANO - Base-line mapping of fauna obtained with grab (2006 – 2013) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=4539
+
 NSBS - North Sea Benthos Survey (1986) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=67
+
 MWTL - Dutch long term monitoring of macrobenthos in the Dutch Continental Economical Zone of the North Sea (since 1991 – 2015) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=5759
+
 ODAM - Danish benthic marine monitoring data (1911 – 2013) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=4494
+
 POHJE - Finnish Baltic Sea benthic monitoring (1964 – 2016) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=5725
+
 Polish Monitoring Programme - Monitoring of the Baltic Sea (1987 – 2013) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=2467
+
 Bay of Puck dataset (1996) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=611
+
 REBENT - Benthic Network (2003 – 2015) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=4412
+
 RSMP Baseline Dataset (1976 – 2016) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=5922
+
 SHARK - Marine soft bottom macrozoobenthos monitoring in Sweden (1971 – 2014) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=2454
 
 Note that a research version of North Sea Benthos Survey was used, as there were problems in the version stored in EMODnet
 
+## Wfs request
 
-The generic wfs request for these datasets was as follows. Note that the R statement paste0 concatenates all elements separated by commas, after giving a value to begindate, enddate an ddatasetid.
+The generic wfs request for these datasets was as follows. Note that the R statement paste0 concatenates all elements separated in the list by commas, after giving a value to begindate, enddate an ddatasetid.
 ```
 paste0(
       "http://geo.vliz.be/geoserver/wfs/ows?service=WFS&version=1.1.0&",
