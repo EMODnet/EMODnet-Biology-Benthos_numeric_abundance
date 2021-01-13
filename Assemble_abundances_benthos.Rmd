@@ -1,8 +1,7 @@
 ---
-title: Experiences in dowloading and parsing large files with abundance and biomass
-  data
+title: Preparation of data product on numerical abundance of benthos in North Sea and Baltic
 author: "Peter M.J. Herman"
-date: "23-9-2020"
+date: "13 January 2021"
 output: pdf_document
 ---
 
@@ -17,6 +16,9 @@ library('rnaturalearth')
 library(magick)
 library(rgeos)
 require(worrms)
+library(EMODnetBiologyMaps)
+require(rgdal)
+source("scripts/emodnet_map_plot_2.R")
 
 downloadDir <- "data/raw_data/downloads"
 dataDir <- "data/derived_data"
@@ -29,13 +31,13 @@ plotsDir <- "product/species_plots"
 
 ## Introduction
 
-In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. In particular, I will highlight the problems and pecularities to take into account when processing these data. This experience can hopefully be used to evaluate the database structure and the data download and parsing tools available.
+In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. I will highlight the pecularities of each data set that had to be taken into account. The description of peculiar problems will hopefully contribute to improvements in the data intake and data management procedures in the future.
 
 ## Basic data download
 
-Using the online download tool, a URL can be constructed that downloads a specific data set. In this case, I have downloaded whatever was available for the dataset. A specific point of attention is that the availability of measusrments and facts multiplies the number of records in the downloaded data file. A single species occurrence results in 10 records, if 10 different paramters (e.g. abundance, dry weight, area sampled etc..) are stored in the database. For that reason, one easily exceeds the built-in limit of 1,000,000 records in the files to be downloaded. In order to avoid this problem, I have downloaded the data per year and per dataset, and afterwards recompiled the datasets by stacking all years on top of one another.
+Using the online download tool, a URL can be constructed that downloads a specific data set. In this case, I have downloaded whatever was available for the dataset. A specific point of attention is that the availability of measurements and facts multiplies the number of records in the downloaded data file. A single species occurrence results in 10 records, if 10 different parameters (e.g. abundance, dry weight, area sampled etc..) are stored in the database. For that reason, one easily exceeds the built-in limit of 1,000,000 records in the files to be downloaded. In order to avoid this problem, I have downloaded the data per year and per dataset, and afterwards recompiled the datasets by stacking all years on top of one another.
 
-The code also shows the datasets concerned. Note that, apart from these data, also the datasets Macrobel (Belgian macrofauna data mainly from Gent University) and NSBS (North Sea Benthos Survey) were included. Both had serious problems and should be re-introduced into the database of Emodnet Biology. For NSBS, based on old files I still had on my computer, I have made a restoration that was added as a file NSBS_TOTAL.csv. The code for that is separate from the code discussed here.
+The code also shows the datasets concerned. Note that, apart from these data, also the datasets Macrobel (Belgian macrofauna data mainly from Gent University) and NSBS (North Sea Benthos Survey) were included. Both had serious problems and should be re-introduced into the database of Emodnet Biology. For NSBS, based on old files I still had on my computer, I have made a restoration that was added into this project as a file NSBS_TOTAL.csv. The code for that is separate from the code discussed here.
 
 ```{r download_and_reconstitute_data, eval=FALSE}
 getDatasets <- data.frame(name=c("Macrobel","Mareano","NSBS","MWTL","ODAM","POHJE",
@@ -166,10 +168,11 @@ retrieve_data<-function(fil){
 
 In working up the data files, a number of problems were encountered that required special adaptations in the script. These will be discussed here, in the order they appear in the script. They will be illustrated by the code used. 
 
-### Inconsistent indication of the area sampled
-There are four different ways, across these 9 files, in which the area sampled by the corer or grab is indicated. In some cases, the field "samplingeffort" is used for this. We come back on that later. In most other files, the parameter "AreaBedSamp (m^2)" is used, except for one file where "InstrumentSurfaceArea (m^2)" indicates exactly the same parameter. I therefore added a translation table for this pair of parameters. This problem is limited to this parameter only, so the introduction of a translation table was a bit of an overkill.
+### Consistent indication of the area sampled
 
-The code gives the translation array. It further illustrates how the basic casting of the data is done, including the code where translation is performed where needed. In the casting, care was taken to include all variables that could be of importance. This included occurrenceid, which made sure that no summarizing function for the parameter_value needed to be given, as it never occurred that the same parameter was found twice for the same value of all the left-hand side variables. Not giving a summarizing function is a good method to implicitly check for this condition, as a warning is produced during casting when the need for such a function is encountered.
+Depending on how the original data were presented to EMODNET Biology, the area sampled per core or grab is indicated in different ways in the database. Across the 9 files, four different ways were found. In some cases, the field "samplingeffort" is used for this. In most files, the parameter "AreaBedSamp (m^2)" is used, except for one file where "InstrumentSurfaceArea (m^2)" indicates the same parameter. I added a translation table for synonymous  parameter names, but the problem was limited to this parameter only and the introduction of a translation table was an overkill.
+
+The code gives the translation array and illustrates how the basic casting of the data is done, including the code for translation. In the casting, care was taken to include all variables that could be of importance. This included occurrenceid, which made sure that no summarizing function for the parameter_value needed to be given, as it never occurred that the same parameter was found twice for the same value of all the left-hand side variables. Not giving a summarizing function is a good method to implicitly check for this condition, as a warning is produced during casting when the need for such a function is encountered.
 
 ```{r chunk1, eval=FALSE}
 stand_par_nam<-tibble(oldnam=c("InstrumentSurfaceArea (m^2)"),
@@ -197,8 +200,8 @@ do_cast<-function(data,fil){
 }
 ```
 
-### No indication of the nature of the parameter_value field
-The parameter_value can be a string, a numeric value, a date, time, or whatever. This depends on the nature of parameter. However, although we are given plenty of details on parameter, including the BODC definition and the reference to the BODC site, a simple indication of the nature of the value is not given. That creates a problem. After casting the long file in square format, we have columns with the values of the different parameters. If these values are numbers, we want to summarize, sum, average them etc., but in order to do so they need to be transformed into numeric columns. For now, I have introduced a list of numeric parameters in my code to solve this problem, but a small addition in the data file could easily solve this problem in a much more elegant way. For now, the function make_num does the job.
+### Uncertain nature of the parameter_value field
+The parameter_value can be a string, a numeric value, a date, time, or whatever. This depends on the nature of the parameter. However, although many details on the parameter are given, including the BODC definition and the reference to the BODC site, the nature of the value is not documented. That information is needed for further data analysis, at least for numeric variables. Casting the long file in square format creates columns with the values of the different parameters. If these values are numbers, the column must be declared numeric before the values can be summarized, summed, averaged etc. I have introduced a list of numeric parameters in my code to solve this problem. In future, a small addition to the data file could solve this problem in a more generic way. 
 
 
 ```{r chunk2, eval=FALSE}
@@ -229,14 +232,14 @@ make_num<-function(datarr,fil){
 }
 
 ```
-### No clear and systematic indication of the sampling, replication and subsampling structure
+### Resolving sampling, replication and subsampling structure
 
-Throughout the data analysis, we used as an operational definition of a "sample" all recorded occurrences that share date, time, latitude, longitude and depth. In many cases such a sample consists of several replicate grabs, box corers or other units of sampling. The data structure lacks a clearly identified field to introduce this unit. In several datasets, the field "eventid" is effectively used for this, but there are several exceptions. In SHARK, e.g., we need the field "fielnumber" to find back what is most probably the replication unit. In POHJE, most samples are sieved over two different sieves, and animals are recorded from both sieves. The sieve information is added to the field "eventid", which makes this field unfit to be used as an indicator of replicate sample units. The structure of the POHJE file is so complicated that a dedicated clean-up function had to be written that performs a separate cast to get rid of non-understandable and non-informative subsampling information that clutters the file.
+Throughout the data analysis, I used as an operational definition of a "sample" all recorded occurrences that share date, time, latitude, longitude and depth. In many cases such a sample consists of several replicate grabs, box corers or other units of sampling. The data structure lacks a clearly identified field to introduce this unit. In several datasets, the field "eventid" is effectively used for this, but there are exceptions. In SHARK, e.g., we need the field "fieldnumber" to find back what is most probably the replication unit. In POHJE, most samples are sieved over two different sieves, and animals are recorded from both sieves. The sieve information is added to the field "eventid", which makes this field unfit to be used as an indicator of replicate sample units. The structure of the POHJE file is so complicated that a dedicated clean-up function had to be written that performs a separate cast to remove some non-informative subsampling coding that clutters the file.
 
-We propose that a clearer structure is adopted, and that one makes sure there is a field in the database that will always indicate unity of the basic sampling unit (e.g. one grab). "Sample" can be derived from place and time if need be, although it would be very convenient to also have a field for that. Subsampling is a separate problem, especially if the subsampling is selective as in the case of the different sieves. If one wants to restrict data to one sieve size only, it is important to know what sieve has been used for every occurrence. Sieve size is a characteristic of the sample that therefore should be incorporated alongside sampling methodology and sampling surface. It is not well possible to include this in the Measurements or Facts, as it is an attribute that needs to be known for the occurrence.
+We propose that a clearer structure is adopted, and that one makes sure there is a field in the database that will always indicate unity of the basic sampling unit (e.g. one grab). "Sample" can be derived from place and time if need be, although it would be very convenient to also have a field for that. Subsampling is a separate problem, especially if the subsampling is selective as in the case of the different sieves. If one wants to restrict data to one sieve size only, it is important to know what sieve has been used for every occurrence. Sieve size is a characteristic of the sample that therefore should be incorporated alongside sampling methodology and sampling surface. It is not well possible to include this in the Measurements or Facts, as it is an attribute that also needs to be known for the occurrence (presence/absende) information, separate from the numeric abundance or biomass information.
 
 The following code gives the clean-up function for POHJE, and further shows the code used to determine the number of replicates per sampling event. It assumes that eventid has a unique value for each basic sampling unit (e.g. grab) that constitutes a replicate. In some datasets, information found elsewhere was transferred to this field beforehand.
-Further the function calculates the total area sampled by all replicates together in a sample. It assumes the surface sampled by a replicate can be found in the field "AreaBedSamp (m^2)". In some datasets the information had to be retrieved and stored there beforehand.
+Further the function calculates the total area sampled by all replicates together in a sample. It assumes the surface sampled by a replicate can be found in the field "AreaBedSamp (m^2)". In some datasets the information had to be retrieved from other places and stored there beforehand.
 
 ```{r chunk3, eval=FALSE}
 cleanPOHJE<-function(data){
@@ -296,13 +299,13 @@ add_nrep<-function(datarr,fil){
   return(data_w_rep)
 }
 ```
-### Difficulties to calculate abundances and biomasses per unit surface
+### Calculating abundance and biomass per unit surface
 
-The following code shows how abundance (number per m2), biomass density (different weight systems, g per m2), counts (individuals per sample) and mass (different weight units per sample) are calculated based on the variety of information that may be present in the different files. This calculation is quite error-prone. One of the problems is that it is very difficult to obtain an overview of these very large files, and one never knows what is happening somewhere in the middle of the records.
+The following code shows how abundance (number per m2), biomass density (different weight systems, g per m2), counts (individuals per sample) and mass (different weight units per sample) are calculated based on the variety of information that may be present in the different files. This calculation is quite error-prone. One of the problems is that it is very difficult to obtain an overview of these very large files. In some datasets a variety of formats occurs, which can easily remain hidden in the very large number of records.
 
-It would be highly advisable that all data originators provide their data not only in the original format (e.g. counts per sample, together with area of the sample), but also provide abundance and aerial biomass density data directly to the database. That puts the responsibility for checking these calculations with the people who know the data best. Only rarely will a user of the data need the real original counts, it is far more common that abundance or biomass density is used. Besides, in the rare case where one needs the original counts, they can always be reconstructed from abundance and size of the sampling unit.
+It would be advisable that all data originators provide their data not only in the original format (e.g. counts per sample, together with area of the sample), but also provide abundance and aerial biomass density data directly to the database. That puts the responsibility for checking these calculations with the people who know the data best. Where counts and sample areas are available, it is of course also advisable to keep these in the database too, as they may be required for some statistical operations and moreover constitute the original observations.
 
-In doing the calculations, one also bumps into strange unit problems. If biomass density is expressed as g/m2, and area sampled is expressed as m2, why is mass per sample than expressed in kg and not in g? Consistency would avoid many errors here.
+Following BODC, biomass density is expressed as g/m2 and area sampled is expressed as m2. However, mass per sample is expressed in kg and not in g. That is easily overlooked and can give rise to errors. It is advised to revise this feature in the future.
 
 
 ```{r chunk4, eval=FALSE}
@@ -376,10 +379,11 @@ sum_avg_param<-function(datarr,fil){
   return(data_sap)
 }
 ```
-## A main loop with more exceptions than loop
+## Main loop
+
 The main loop is, in principle, very simple. A data file is read, the data are cast in square format, numerical fields are made numeric, the number of replicates per sample is calculated alongside (if that information exists) with the total area sampled, the sum and/or average of the relevant abundance and biomass variables is calculated, and the results are written to a file.
 
-However, the majority of the following code consists of all the changes that were needed for the different data sets. These exceptions and small tweaks illustrate e.g. where information on area sampled could be found (in a variable that is, strange enough, a character variable that contains the unit in its value field instead of in the header, and that uses decimal commas in some data sets instead of decimal points). It illustrates that for some parameters the infilling of the field 'parameter' has failed, so that one does not have this essential information prior to the parameter_value. Most often, however, it can be derived from other information in the file when this occurs. Comments in the code give information on what the tweaks were about.
+However, the data files have differences in their basic structure, excluding the possibility to perform these tasks with a single code for the different files. A relatively large number of exceptions and small tweaks was needed, e.g. due to differences in the place where information on area sampled could be found (e.g. in a character variable containing the unit in its value field instead of in the header, and using decimal commas in some data sets instead of decimal points). For some parameters, the field 'parameter' has not been filled and this needed correction. Comments in the code give information on what the tweaks were about.
 
 ```{r main_loop, eval=FALSE}
 
@@ -463,7 +467,7 @@ for(ds in 1:nds){
         # use fieldnumber instead of eventid to identify events in SHARK
           if(fil=="SHARK_TOTAL.csv") data2$eventid<-data2$fieldnumber
         
-        # no information on area samples in MAREANO. Rename samplingeffort (only NA)
+        # no information on area sampled in MAREANO. Rename samplingeffort (only NA)
           if (fil=="MAREANO_TOTAL.csv") data2$`AreaBedSamp (m^2)`<-as.numeric(data2$samplingeffort)
   
   # determine number of replicates per sampling occasion (date, place), and add column to the data frame
@@ -482,17 +486,17 @@ for(ds in 1:nds){
   rm(data,data1,data2,data3,data4)
 }
 ```
-### Conclusions on parsing the data
+### Some conclusions on parsing the data
 
-It is clear from this code that the data files, although already standardized to a fair degree, still have a number of differences that frustrate the machine-based extraction of information. Where it is justified, some difference in structure or content of the files is allowable provided this is internally documented. However, much of the variation presently found is only clutter and does not serve a purpose. 
+It is clear from this code that the data files, although already standardized to a fair degree, still have a number of differences that frustrate the machine-based extraction of information. Where it is justified, some difference in structure or content of the files is allowable provided this is internally documented. However, much of the variation presently found does not serve an apparent purpose. 
 
-Some clean-up actions are purely technical. It is unclear why the area sampled by a grab is given in one dataset in the field samplingeffort as "0,1 m2", in another dataset as "0,1 m²" or "0.1 m2", while in most other datasets it is in MoF under parameter "AreaBedSamp (m^2)". MoF with parameter_values given, but the field parameter as "NA" can often be corrected, but if not can better be removed as one does not know what the measurement is.
+Some clean-up actions are purely technical. It is unclear why the area sampled by a grab is given in one dataset in the field samplingeffort as "0,1 m2", in another dataset as "0,1 m²" or "0.1 m2", while in most other datasets it is in Measurements or Facts under parameter "AreaBedSamp (m^2)". MoF with parameter_values given, but the field parameter as "NA" can often be corrected, but if not can better be removed as one does not know what the measurement is.
 
 Other clean-up actions can consist of the removal of some records from the datasets unless they are completed. As an example, there is no point in storing counts per sample if it cannot be retrieved what the size of the samples was. 
 
-Clean-up can also consist of rethinking the organisation of the data in datasets. It is questionable if it is a good idea to put all information from one data provider into a single dataset. Why are camera observations without numerical abundance information in MWTL mixed with box core information that provides abundance and (ash-free-dwt) biomass for all species? Would it not be much more useful to have both datasets separate, as no one is probably going to use both parts of the data set in one analysis (and even if that would happen, what is the problem of downloading two datasets instead of one?).
+Clean-up can also consist of rethinking the organisation of the data in datasets. It is questionable if it is a good idea to put all information from one data provider into a single dataset. Why are camera observations without numerical abundance information in MWTL mixed with box core information that provides abundance and (ash-free-dwt) biomass for all species? I propose to be more restrictive in the definition of what constitutes a 'dataset', although some vagueness in the boundaries will probable always remain.
 
-Finally, a rethinking of the representation of the basic sampling, replication and subsampling structure is needed. This is currently a large source of uncertainty relying on the correct interpretation of what is in eventid or in fieldnumber etc.
+Finally, a rethinking of the representation of the basic sampling, replication and subsampling structure is needed. This is currently a large source of uncertainty relying on the correct interpretation of what is in several columns, e.g. eventid, fieldnumber or others.
 
 ## Collecting all data
 
@@ -515,7 +519,7 @@ save(all_recs,file=file.path(dataDir,"all_recs.Rdata"))
 ```
 ## Selecting the species to be plotted
 
-From this raw composed data file, the species suitable for further treatment are selected. As this dataset concentrates on macrozoobenthos, the selection of species attempts to concentrate on this group only. The procedures have been used and described in the product on deriving presence/absence data, and are identical to the procedures used there.
+From this raw composed data file, the species suitable for further treatment are selected. As this dataset concentrates on macrozoobenthos, the selection of species attempts to concentrate on this group only. The procedures are identical to what was used in the data product on presence/absence of benthos. We refer to that data product for a description of the procedures.
 
 ```{r species-selection, eval=FALSE}
 #### SPECIES SELECTION ############
@@ -523,8 +527,6 @@ load(file.path(dataDir,"all_recs.Rdata"))
 
 # we build the species list, keeping the taxonomic information we have in the total data set
 # we foresee logical columns in the species list to group the species by in the rest of this script
-### extracting numeric aphiaid: mutate(AphiaID=as.numeric(substr(aphiaidaccepted,52,65)))
-
 
 splst <- all_recs %>%
   ungroup() %>%
@@ -670,10 +672,11 @@ sp2use <- splst %>%
 write_delim(sp2use,file.path(dataDir,"sp2use.csv"),delim=",")
 ```
 ## Prepare the data for the production of maps
-After loading the data and the list of species to use, the dataset is filtered to contain only the true macrobenthic species information. Species are ordered in the order of their frequency (number of records with presence) in the data set. Events are defined, across the dataset, as samples that have a unique position in space (coordinates, depth) and time. A square matrix is prepared that contains, in the first columns, information on location, time and event, and than has one column per species with the numerical abundance.
-Note that there is also quite some information on biomass in the basic data file. In principle, a similar file could also be made for biomass, but some conversion between wet weight, dry weight and ash-free dry weight would be needed for that.
+After loading the data and the list of species to use, the dataset is filtered to contain only the true macrobenthic species information. Species are ordered in the order of their frequency (number of records with presence) in the data set. Events are defined, across the dataset, as samples that have a unique position in space (coordinates, depth) and time. A square matrix is prepared that contains, in the first columns, information on location, time and event, and then has one column per species with the numerical abundance.
+
 The product of this step is a file with the numerical abundance (including all zeroes) of all species in all samples. This is the basic data product. It is written as a csv file and as a binary file. It will be used in preparing the maps and the interpolations.
 
+Note that there is also quite some information on biomass in the basic data file. In principle, a similar file could also be made for biomass, but some conversion between wet weight, dry weight and ash-free dry weight would be needed for that.
 ```{r prepare-maps, eval=FALSE}
 ##########################################################
 #### load data
@@ -761,26 +764,6 @@ proWG<-CRS("+proj=longlat +datum=WGS84")
 # define a raster covering the grid. Set resolution of the raster here
 ##########################################################
 r<-raster(ext=extent(-16,36,40,74),ncol=156,nrow=238,crs=proWG,vals=0)
-##########################################################
-# load some information needed for the maps
-##########################################################
-# Show countries
-world <- ne_countries(scale = "medium", returnclass = "sf")
-# EMODnet colors
-emodnetColor <- list(
-  # First palette
-  blue = "#0A71B4",
-  yellow = "#F8B334",
-  darkgrey = "#555555",
-  # Secondary palette,
-  darkblue = "#012E58",
-  lightblue = "#61AADF",
-  white = "#FFFFFF",
-  lightgrey = "#D9D9D9"
-)
-# EMODnet logo
-logo_raw <- image_read("https://www.emodnet-biology.eu/sites/emodnet-biology.eu/files/public/logos/logo-footer.png") 
-logo <- logo_raw %>% image_scale("150")
 #
 #########################################################
 # load data
@@ -831,41 +814,20 @@ for(ss in spmin:spmax){
     overwrite=TRUE
   )
   #
-  # Transform raster to vector
+  # Plot the grid using the Emodnet_map package
   
-  grid <- sf::st_as_sf(raster::rasterToPolygons(r1))
-  grid_bbox <- sf::st_bbox(sf::st_transform(grid, 3035))
-  
-  # Plot the grid
-  plot_grid <- ggplot() +
-    geom_sf(data = world, 
-            fill = emodnetColor$darkgrey, 
-            color = emodnetColor$lightgrey, 
-            size = 0.1) +
-    geom_sf(data = grid, aes(fill = log10_abund), color=NA) +
-    coord_sf(crs = 3035, xlim = c(grid_bbox$xmin, grid_bbox$xmax), ylim = c(grid_bbox$ymin, grid_bbox$ymax)) +
-    scale_fill_viridis_c(alpha = 1, begin = 0, end = 1, direction = 1) +
-    ggtitle(specname,
-            subtitle = paste0('AphiaID ', spAphId)) +
-    theme(
-      panel.background = element_rect(fill = emodnetColor$lightgrey),
-      plot.title = element_text(color= emodnetColor$darkgrey, size = 14, face="bold.italic", hjust = 0.5),
-      plot.subtitle = element_text(color= emodnetColor$darkgrey, face="bold", size=10, hjust = 0.5)
-    )
-  
-  # Inspect plot
-  plot_grid
-  
-  # Save plot
+  legend="log10(abund)"
+  #
+  # Plot and save the grid
+  #
+  ec<-emodnet_colors()
+  plot_grid <- emodnet_map_plot_2(data=r1,title=specname,subtitle=paste0('AphiaID ', spAphId),
+                                  zoom=TRUE,seaColor=ec$darkgrey,landColor=ec$lightgrey,legend=legend)
   filnam<-file.path(plotsDir, 
                     paste0(sprintf("%04d",ss), "_",spAphId, "_",gsub(" ", "-", specname),".png"))
-  ggsave(filename = filnam,width = 198.4375, height = 121.70833333, dpi = 300, units = "mm")
-  
-  # # Add emodnet logo
-  # plot <- image_read(filnam)
-  # final_plot <- image_composite(plot, logo, gravity = "southeast", offset = "-680-220")
-  # image_write(final_plot, filnam)
-  
+  #
+  emodnet_map_logo(plot_grid,path=filnam,width=120,height=160,dpi=300,units="mm",offset="+0+0")
+  #
 }
 
 ```
