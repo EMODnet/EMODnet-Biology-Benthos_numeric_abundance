@@ -5,7 +5,14 @@ date: "13 January 2021"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+
+## Introduction
+
+In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. I will highlight the pecularities of each data set that had to be taken into account. The description of peculiar problems will hopefully contribute to improvements in the data intake and data management procedures in the future.
+
+## Libraries and general settings
+
+```{r setup, eval=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 require(tidyverse)
 require(reshape2)
@@ -38,15 +45,15 @@ if(!dir.exists(rasterDir))         dir.create(rasterDir)
 if(!dir.exists(plotsDir))          dir.create(plotsDir)
 ```
 
-## Introduction
-
-In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. I will highlight the pecularities of each data set that had to be taken into account. The description of peculiar problems will hopefully contribute to improvements in the data intake and data management procedures in the future.
 
 ## Basic data download
 
 Using the online download tool, a URL can be constructed that downloads a specific data set. In this case, I have downloaded whatever was available for the dataset. A specific point of attention is that the availability of measurements and facts multiplies the number of records in the downloaded data file. A single species occurrence results in 10 records, if 10 different parameters (e.g. abundance, dry weight, area sampled etc..) are stored in the database. For that reason, one easily exceeds the built-in limit of 1,000,000 records in the files to be downloaded. In order to avoid this problem, I have downloaded the data per year and per dataset, and afterwards recompiled the datasets by stacking all years on top of one another.
 
 The code also shows the datasets concerned. Note that, apart from these data, also the datasets Macrobel (Belgian macrofauna data mainly from Gent University) and NSBS (North Sea Benthos Survey) were included. Both had serious problems and should be re-introduced into the database of Emodnet Biology. For NSBS, based on old files I still had on my computer, I have made a restoration that was added into this project as a file NSBS_TOTAL.csv. The code for that is separate from the code discussed here.
+
+
+
 
 ```{r download_and_reconstitute_data, eval=FALSE}
 getDatasets <- data.frame(name=c("Mareano","MWTL","ODAM","POHJE",
