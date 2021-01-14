@@ -2,15 +2,19 @@
 
 ## Introduction
 
-This repository contains the scripts used to compile different datasets in this area into a comprehensive summary of available data on abundance and (where available) biomass density of macrozoobenthos. This dataset underlies the product on benthic living modes, but differs in details as it is a new version. Datasets were selected that were sufficiently similar in methods for sampling (either boxcore or grab), sampled surface (in the order of 0.1 square meter, although the exact value is variable - it can be found back in the data files) and sieves (1 mm and 0.5 mm sieves were included). For all datasets, abundance was either used directly from the given abundance in the dataset, or calculated from the given counts and area sampled.
+The data product on benthic living modes (Beauchard, 2018), was based on an extensive compilation of data on benthic abundance and biomass. However, this dataset was only present as a data file, without the underlying scripts to reproduce the result. With the present data product, we correct this procedural gap.
 
-This compiled dataset is composed of approximately 80000 samples, many of which are composed of a number of replicate grabs or cores. Replicates were taken together during the processing of the data. Species recorded in the dataset were filtered as much as possible, based on whether they belong to the macrobenthos. The filtering method was automatic, based on WoRMS information. In general, WoRMS contains good quality trait information on benthic species. However, it cannot be guaranteed that all of the >4000 species are true benthic species.
+This repository contains the scripts used to compile different datasets in this area into a comprehensive summary of available data on abundance and (where available) biomass density of macrozoobenthos. This dataset differs in details from the file underlying the data product on living modes, as it is a new version. However, differences are minor. Datasets were selected that were sufficiently similar in methods for sampling (either boxcore or grab), sampled surface (in the order of 0.1 square meter, although the exact value is variable - it can be found back in the data files) and sieves (1 mm and 0.5 mm sieves were included). For all datasets, abundance was either used directly from the given abundance in the dataset, or calculated from the given counts and area sampled.
+
+The compiled dataset is composed of approximately 80000 samples, many of which are themselves a composite of a number of replicate grabs or cores. Replicates were taken together during the processing of the data. Species recorded in the dataset were filtered as much as possible, based on whether they belong to the macrobenthos. The filtering method was automatic, based on WoRMS information. In general, WoRMS contains good quality trait information on benthic species. However, it cannot be guaranteed that all of the >4000 species are true benthic species, or that all true benthic species are included in the data set.
+
+Information gained during the species selection was fed back to the WoRMS editors and will be used in future to further refine the WoRMS trait data.
 
 The aim of this product is to underly analysis of such characteristics as living modes, bioturbation potential, role in food webs or indicators for environmental changes. Although the maps in the product show all information contained in the database over all years since 1980, time information is stored in the intermediary files and thus in principle available to investigate time evolution in the composition of benthos across Europe. Such applications have not been made, but it is hoped that several of this type of applications will be developed based on the present product.
 
 ## General procedure in preparing the data product
 
-The entire workflow is documented in an R markdown document to be found in the directory 'analysis'. The pdf file based on this markdown document resides in the director 'docs'.
+The entire workflow is documented in an R markdown document to be found in the root directory of the GitHub site. The pdf file based on this markdown document resides in the director 'docs'.
 
 In short, the workflow is as follows. Data are retrieved by dataset and by year, using webservices. They are then recompiled into a single file by dataset. These files are very big.
 Subsequently the data files per dataset are parsed to extract the abundance and biomass data. Based on the parsed results, a total data file is constructed that contains all relevant records. This dataset is still partially in a 'long' format. There is one record per sample and per species. It can be used to extract data on individual species, or on species groups. In a next step of the analysis the benthic species are filtered out. This procedure is essentially the same as that used in the product showing presence/abence of macrobenthos in the Greater North Sea. Finally, maps are produced, as well as a data file that can be used for interpolation by DIVA. The mapping is similar to the mapping procedure in the presence/absence data product, although details (e.g. the area covered) differ.
@@ -19,10 +23,11 @@ Subsequently the data files per dataset are parsed to extract the abundance and 
 
 ```
 {{directory_name}}/
-├── analysis
 ├── data/
 │   ├── derived_data/
 │   └── raw_data/
+│       └── downloads
+│       └── totals
 ├── docs/
 ├── product/
 │   ├── maps/
@@ -35,7 +40,7 @@ Subsequently the data files per dataset are parsed to extract the abundance and 
 * **data** - the containers for data storage. Note that due to the size of the files, no actual data are stored in Github
 * **docs** - Rendered report of the Markdown document
 * **product** - containers for output product files- actually empty because of file size
-* **scripts** - Code used for the product. Only the code in the main directory is used. Old scripts refer to a 2018 previous version of this product. Single data set casts are scripts that were used to investigate single data files. Contentwise they have been merged in the new script to cast all datasets.
+* **scripts** - Code used for the product. As almost all code is contained in the Markdown file, this directory is almost empty. It only contains a slightly modified version of a routine in the Emodnet maps package, that was needed because of the small size of the raster cells in our maps. This version omits the border of the raster polygon and thus produces much clearer maps when the border is thick compared to the cell.
 
 ## Data series
 
@@ -139,20 +144,23 @@ The following data products are derived by this code.
 ## More information:
 
 ### References
+Beauchard, O. 2018. Data product on benthic living modes. https://www.emodnet-biology.eu/distribution-benthic-macroinvertebrate-living-modes-european-seas
+
+Beauchard, O.; Troupin, C.; (2018): Distribution of benthic macroinvertebrate living modes in European seas. Marine Data Archive. https://doi.org/10.14284/373
 
 ### Code and methodology
 
-Code and methodology are fully documented in the file ./analysis/Assemble_abundances_benthos.Rmd.
+Code and methodology are documented in the file ./Assemble_abundances_benthos.Rmd.
 
 ### Citation and download link
 
 This product should be cited as:
 
-{{product_citation}}
+Beauchard, Olivier, Herman, Peter M.J., Fernandez, Salvador. 2021. Data product numerical abundance of benthic macroinvertebrates in North Sea and Baltic Sea. xxxxxx
 
 Available to download in:
 
-{{link_download}}
+xxxxxx
 
 ### Authors
 
