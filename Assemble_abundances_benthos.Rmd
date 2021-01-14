@@ -18,15 +18,24 @@ library(rgeos)
 require(worrms)
 library(EMODnetBiologyMaps)
 require(rgdal)
-source("scripts/emodnet_map_plot_2.R")
+source("./scripts/emodnet_map_plot_2.R")
 
-downloadDir <- "data/raw_data/downloads"
-dataDir <- "data/derived_data"
-totalsDir<-"data/raw_data/totals"
-mapsDir <- "product/maps"
-rasterDir <- "product/species_rasters"
-plotsDir <- "product/species_plots"
+downloadDir <- "./data/raw_data/downloads"
+dataDir <- "./data/derived_data"
+totalsDir<-"./data/raw_data/totals"
+mapsDir <- "./product/maps"
+rasterDir <- "./product/species_rasters"
+plotsDir <- "./product/species_plots"
 
+if(!dir.exists("./data"))          dir.create("./data")
+if(!dir.exists("./data/raw_data")) dir.create("./data/raw_data")
+if(!dir.exists("./product"))       dir.create("./product")
+if(!dir.exists(downloadDir))       dir.create(downloadDir)
+if(!dir.exists(dataDir))           dir.create(dataDir)
+if(!dir.exists(totalsDir))         dir.create(totalsDir)
+if(!dir.exists(mapsDir))           dir.create(mapsDir)
+if(!dir.exists(rasterDir))         dir.create(rasterDir)
+if(!dir.exists(plotsDir))          dir.create(plotsDir)
 ```
 
 ## Introduction
@@ -40,7 +49,7 @@ Using the online download tool, a URL can be constructed that downloads a specif
 The code also shows the datasets concerned. Note that, apart from these data, also the datasets Macrobel (Belgian macrofauna data mainly from Gent University) and NSBS (North Sea Benthos Survey) were included. Both had serious problems and should be re-introduced into the database of Emodnet Biology. For NSBS, based on old files I still had on my computer, I have made a restoration that was added into this project as a file NSBS_TOTAL.csv. The code for that is separate from the code discussed here.
 
 ```{r download_and_reconstitute_data, eval=FALSE}
-getDatasets <- data.frame(name=c("Macrobel","Mareano","NSBS","MWTL","ODAM","POHJE",
+getDatasets <- data.frame(name=c("Mareano","MWTL","ODAM","POHJE",
                                  "Polish","Puck","Rebent","RSMP","SHARK"),
                           datasetid=c(145,4539,67,5759,4494,5725,2467,611,4412,5922,2454),
                           include=c(T,T,T,T,T,T,T,T,T,T,T))
@@ -49,7 +58,6 @@ for(jj in 1:length(getDatasets$datasetid)){
   for(year in 1980:2019){
     datasetid <- getDatasets$datasetid[jj]
     datasetname<-getDatasets$name[jj]
-    decadename<-decades$nams[ii]
     begindate <- paste0(year,"-01-01")
     enddate   <- paste0(year,"-12-31")
     print(paste("downloading data for dataset",datasetname,"ID nr: ", datasetid,"year",year))
@@ -156,7 +164,8 @@ datfils<-c("SHARK_TOTAL.csv",
            "POHJE_TOTAL.csv",
            "ODAM_TOTAL.csv",
            "MWTL_TOTAL.csv",
-           "MAREANO_TOTAL.csv")
+           "MAREANO_TOTAL.csv",
+           "NSBS_TOTAL.csv")
 
 retrieve_data<-function(fil){
   data<-read_delim(file.path(totalsDir,fil),delim=",",
@@ -416,16 +425,31 @@ for(ds in 1:nds){
   # cast the parameters
   data1<-do_cast(data,fil)
   
-        # derive the area sampled from the character field samplingeffort in PUCK and ODAM
+        # derive the area sampled from the character field samplingeffort in PUCK and ODAM...
           if (fil=="PUCK_TOTAL.csv" | fil=="ODAM_TOTAL.csv"){
             data1<-data1 %>%
               mutate(samplingeffort=gsub(" m²","",samplingeffort)) %>%
               mutate(`AreaBedSamp (m^2)`=gsub(",",".",samplingeffort))
           }
-        # and just that slight little difference for POLISH
+        # ... and just that slight little difference for POLISH...
           if(fil=="POLISH_TOTAL.csv"){
             data1<-data1 %>%
               mutate(`AreaBedSamp (m^2)`=gsub(" m2","",samplingeffort))
+          }
+        # ... but different again in SHARK...
+          if(fil=="SHARK_TOTAL.csv"){
+            # find beginning of sampled area in strings
+            sa1<-regexpr("SamplerArea(cm2)=",data1$samplingeffort,fixed=T)+17
+            # check if a colon occurs after the position sa1; if so take position for end substring
+            saa<-regexpr(";",substr(data1$samplingeffort,sa1,1000),fixed=T)
+            sa2<- ifelse(saa > -1,saa-1,1000)
+            data1 <- data1 %>%
+              mutate(`AreaBedSamp (m^2)`=as.numeric(substr(samplingeffort,sa1,sa2)))
+          }
+        # ... and actually a conversion of NAs in NSBS
+          if(fil=="NSBS_TOTAL.csv"){
+            data1 <- data1 %>%
+              mutate(`AreaBedSamp (m^2)`=as.numeric(samplingeffort))
           }
         # select only core samples from MWTL, and restrict to records with abundance
           if (fil=="MWTL_TOTAL.csv"){
@@ -541,27 +565,27 @@ splst <- all_recs %>%
          plankton=FALSE,nekton=FALSE,Pisces=FALSE,Algae=FALSE,
          Aves_tax=FALSE,Pisces_tax=FALSE,Algae_tax=FALSE,Plants_tax=FALSE,
          meio_tax=FALSE,micro_tax=FALSE,misc_tax=FALSE)
-# ###### determine, using attributes, which species are benthos #######
-# ###### again, several hours download ##########
-# (done once, result stored as delimited file)
-# nsp_attr<-tibble()
-# for(i in 1:nrow(splst)){
-#   print(paste(i,"out of",nrow(splst),"downloading attributes of species",
-#               splst$scientificnameaccepted[i],"AphiaID",splst$AphiaID[i]))
-#   ttt<-NULL
-#   try(ttt<-wm_attr_data(id=splst$AphiaID[i],include_inherited = T),silent = T)
-#   if(! is.null(ttt)) nsp_attr<-rbind(nsp_attr,ttt[,1:9])
-# }
-# 
-# nsp_attr <- nsp_attr %>%
-#                   mutate(AphiaID=as.numeric(AphiaID)) %>%
-#                   left_join(splst,by="AphiaID")
-# write_delim(nsp_attr,file.path(dataDir,"nsp_attr.csv"),delim=",")
-# save(nsp_attr,file=file.path(dataDir,"nsp_attr.Rdata"))
-# 
+###### determine, using attributes, which species are benthos #######
+###### again, several hours download ##########
+###### (done once, result stored as delimited file)
+nsp_attr<-tibble()
+for(i in 1:nrow(splst)){
+  print(paste(i,"out of",nrow(splst),"downloading attributes of species",
+              splst$scientificnameaccepted[i],"AphiaID",splst$AphiaID[i]))
+  ttt<-NULL
+  try(ttt<-wm_attr_data(id=splst$AphiaID[i],include_inherited = T),silent = T)
+  if(! is.null(ttt)) nsp_attr<-rbind(nsp_attr,ttt[,1:9])
+}
+
+nsp_attr <- nsp_attr %>%
+                  mutate(AphiaID=as.numeric(AphiaID)) %>%
+                  left_join(splst,by="AphiaID")
+write_delim(nsp_attr,file.path(dataDir,"nsp_attr.csv"),delim=",")
+save(nsp_attr,file=file.path(dataDir,"nsp_attr.Rdata"))
 
 
-nsp_attr <- read_delim(file.path(dataDir,"nsp_attr.csv"),delim=",")
+
+# nsp_attr <- read_delim(file.path(dataDir,"nsp_attr.csv"),delim=",")
 # what Functional groups are there?
 fg <- nsp_attr %>% filter(measurementType=="Functional group") %>% 
   dplyr::select(measurementValue) %>% 
