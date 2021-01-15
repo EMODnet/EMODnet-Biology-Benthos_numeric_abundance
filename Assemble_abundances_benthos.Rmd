@@ -8,7 +8,7 @@ output: pdf_document
 
 ## Introduction
 
-In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. I will highlight the pecularities of each data set that had to be taken into account. The description of peculiar problems will hopefully contribute to improvements in the data intake and data management procedures in the future.
+In this report I document the operations on the EMODNET Biology databases, needed to reconstruct a large-scale overview of abundance of benthic animals, and combining several independent data sets. I will highlight the pecularities of each data set that had to be taken into account. The description of peculiar problems will  contribute to improvements in the data intake and data management procedures in the future.
 
 ## Libraries and general settings
 
@@ -48,37 +48,35 @@ if(!dir.exists(plotsDir))          dir.create(plotsDir)
 
 ## Basic data download
 
-Using the online download tool, a URL can be constructed that downloads a specific data set. In this case, I have downloaded whatever was available for the dataset. A specific point of attention is that the availability of measurements and facts multiplies the number of records in the downloaded data file. A single species occurrence results in 10 records, if 10 different parameters (e.g. abundance, dry weight, area sampled etc..) are stored in the database. For that reason, one easily exceeds the built-in limit of 1,000,000 records in the files to be downloaded. In order to avoid this problem, I have downloaded the data per year and per dataset, and afterwards recompiled the datasets by stacking all years on top of one another.
+Using the online download tool, a URL can be constructed that downloads a specific data set. In this case, I have downloaded whatever was available for the data set. A specific point of attention is that the availability of measurements and facts multiplies the number of records in the downloaded data file. A single species occurrence results in 10 records, if 10 different parameters (e.g. abundance, dry weight, area sampled etc..) are stored in the database. For that reason, one easily exceeds the built-in limit of 1,000,000 records in the files to be downloaded. In order to avoid this problem, I have downloaded the data per year and per data set, and afterwards recompiled the data sets by stacking all years on top of one another.
 
-The code also shows the datasets concerned. Note that, apart from these data, also the datasets Macrobel (Belgian macrofauna data mainly from Gent University) and NSBS (North Sea Benthos Survey) were included. Both had serious problems and should be re-introduced into the database of Emodnet Biology. For NSBS, based on old files I still had on my computer, I have made a restoration that was added into this project as a file NSBS_TOTAL.csv. The code for that is separate from the code discussed here.
-
-
+The code also shows the data sets concerned. Note that, apart from these data, also the data set NSBS (North Sea Benthos Survey) was included from an external file, as the version stored in EMODnet is currently incomplete, compared to the original files in the research version. The DMT (Data Management Team) is aware of this, and will soon resolve this discrepancy. For the time being the file NSBS_TOTAL.csv was added to the directory ./data/raw_data/totals by hand. The code for that is separate from the code discussed here. After checks with the EMODNET DMT, the code will be updated for use of the general database.
 
 
 ```{r download_and_reconstitute_data, eval=FALSE}
-getDatasets <- data.frame(name=c("Mareano","MWTL","ODAM","POHJE",
+getdata sets <- data.frame(name=c("Mareano","MWTL","ODAM","POHJE",
                                  "Polish","Puck","Rebent","RSMP","SHARK"),
-                          datasetid=c(145,4539,67,5759,4494,5725,2467,611,4412,5922,2454),
+                          data setid=c(145,4539,67,5759,4494,5725,2467,611,4412,5922,2454),
                           include=c(T,T,T,T,T,T,T,T,T,T,T))
-getDatasets <- getDatasets %>% filter(include)
-for(jj in 1:length(getDatasets$datasetid)){
+getdata sets <- getdata sets %>% filter(include)
+for(jj in 1:length(getdata sets$data setid)){
   for(year in 1980:2019){
-    datasetid <- getDatasets$datasetid[jj]
-    datasetname<-getDatasets$name[jj]
+    data setid <- getdata sets$data setid[jj]
+    data setname<-getdata sets$name[jj]
     begindate <- paste0(year,"-01-01")
     enddate   <- paste0(year,"-12-31")
-    print(paste("downloading data for dataset",datasetname,"ID nr: ", datasetid,"year",year))
+    print(paste("downloading data for data set",data setname,"ID nr: ", data setid,"year",year))
     downloadURL <- paste0(
       "http://geo.vliz.be/geoserver/wfs/ows?service=WFS&version=1.1.0&",
       "request=GetFeature&typeName=Dataportal%3Aeurobis-obisenv&",
-      "resultType=results&viewParams=where%3Adatasetid+IN+%28",
-      datasetid,
+      "resultType=results&viewParams=where%3Adata setid+IN+%28",
+      data setid,
       "%29+AND+%28%28observationdate+BETWEEN+%27",
       begindate,
       "%27+AND+%27",
       enddate,
       "%27+%29%29%3Bcontext%3A0100&propertyName=",
-      "datasetid%2C",
+      "data setid%2C",
       "datecollected%2C",
       "decimallatitude%2C",
       "decimallongitude%2C",
@@ -128,7 +126,7 @@ for(jj in 1:length(getDatasets$datasetid)){
       "&outputFormat=csv"
     )
     data <- read_csv(downloadURL) 
-    filename = paste0(datasetname,"_",datasetid,"_",year,".csv")
+    filename = paste0(data setname,"_",data setid,"_",year,".csv")
     if(nrow(data) != 0){
       write_delim(data, file.path(downloadDir, filename), delim = ",")
     }
@@ -139,7 +137,7 @@ for(jj in 1:length(getDatasets$datasetid)){
 
 filnams<-list.files(downloadDir)
 
-for (ds in getDatasets$name){
+for (ds in getdata sets$name){
   filelist<-filnams[grep(ds,filnams)]
  
   all2Data <- lapply(filelist, function(x) 
@@ -182,7 +180,7 @@ retrieve_data<-function(fil){
 
 ```
 
-In working up the data files, a number of problems were encountered that required special adaptations in the script. These will be discussed here, in the order they appear in the script. They will be illustrated by the code used. 
+In working up the data files, a number of problems were encountered that required special adaptations in the script. These will be discussed here, in the order they appear in the script. They will be illustrated by the code used. The documented problems have been discussed with the DMT and will be used as input for the full transfer of the data base into the eventCore format.
 
 ### Consistent indication of the area sampled
 
@@ -196,7 +194,7 @@ stand_par_nam<-tibble(oldnam=c("InstrumentSurfaceArea (m^2)"),
 
 do_cast<-function(data,fil){
   datarr<-dcast(data,
-                datasetid+institutioncode+collectioncode+eventid+
+                data setid+institutioncode+collectioncode+eventid+
                   datecollected+yearcollected+
                   monthcollected+daycollected+recordnumber+fieldnumber+decimallongitude+
                   decimallatitude+minimumdepthinmeters+occurrenceid+scientificname+
@@ -250,17 +248,17 @@ make_num<-function(datarr,fil){
 ```
 ### Resolving sampling, replication and subsampling structure
 
-Throughout the data analysis, I used as an operational definition of a "sample" all recorded occurrences that share date, time, latitude, longitude and depth. In many cases such a sample consists of several replicate grabs, box corers or other units of sampling. The data structure lacks a clearly identified field to introduce this unit. In several datasets, the field "eventid" is effectively used for this, but there are exceptions. In SHARK, e.g., we need the field "fieldnumber" to find back what is most probably the replication unit. In POHJE, most samples are sieved over two different sieves, and animals are recorded from both sieves. The sieve information is added to the field "eventid", which makes this field unfit to be used as an indicator of replicate sample units. The structure of the POHJE file is so complicated that a dedicated clean-up function had to be written that performs a separate cast to remove some non-informative subsampling coding that clutters the file.
+Throughout the data analysis, I used as an operational definition of a "sample" all recorded occurrences that share date, time, latitude, longitude and depth. In many cases such a sample consists of several replicate grabs, box corers or other units of sampling. The data structure lacks a clearly identified field to introduce this unit. In several data sets, the field "eventid" is effectively used for this, but there are exceptions. In SHARK, e.g., we need the field "fieldnumber" to find back what is most probably the replication unit. In POHJE, most samples are sieved over two different sieves, and animals are recorded from both sieves. The sieve information is added to the field "eventid", which makes this field unfit to be used as an indicator of replicate sample units. The structure of the POHJE file is so complicated that a dedicated clean-up function had to be written that performs a separate cast to remove some non-informative subsampling coding that clutters the file.
 
-We propose that a clearer structure is adopted, and that one makes sure there is a field in the database that will always indicate unity of the basic sampling unit (e.g. one grab). "Sample" can be derived from place and time if need be, although it would be very convenient to also have a field for that. Subsampling is a separate problem, especially if the subsampling is selective as in the case of the different sieves. If one wants to restrict data to one sieve size only, it is important to know what sieve has been used for every occurrence. Sieve size is a characteristic of the sample that therefore should be incorporated alongside sampling methodology and sampling surface. It is not well possible to include this in the Measurements or Facts, as it is an attribute that also needs to be known for the occurrence (presence/absende) information, separate from the numeric abundance or biomass information.
+We propose that a clearer structure is adopted, and that one makes sure there is a field in the database that will always indicate unity of the basic sampling unit (e.g. one grab). "Sample" can be derived from place and time if need be, although it would be very convenient to also have a field for that. Subsampling is a separate problem, especially if the subsampling is selective as in the case of the different sieves. If one wants to restrict data to one sieve size only, it is important to know what sieve has been used for every occurrence. Sieve size is a characteristic of the sample that therefore should be incorporated alongside sampling methodology and sampling surface. It is not well possible to include this in the Measurements or Facts, as it is an attribute that also needs to be known for the occurrence (presence/absence) information, separate from the numeric abundance or biomass information.
 
-The following code gives the clean-up function for POHJE, and further shows the code used to determine the number of replicates per sampling event. It assumes that eventid has a unique value for each basic sampling unit (e.g. grab) that constitutes a replicate. In some datasets, information found elsewhere was transferred to this field beforehand.
-Further the function calculates the total area sampled by all replicates together in a sample. It assumes the surface sampled by a replicate can be found in the field "AreaBedSamp (m^2)". In some datasets the information had to be retrieved from other places and stored there beforehand.
+The following code gives the clean-up function for POHJE, and further shows the code used to determine the number of replicates per sampling event. It assumes that eventid has a unique value for each basic sampling unit (e.g. grab) that constitutes a replicate. In some data sets, information found elsewhere was transferred to this field beforehand.
+Further the function calculates the total area sampled by all replicates together in a sample. It assumes the surface sampled by a replicate can be found in the field "AreaBedSamp (m^2)". In some data sets the information had to be retrieved from other places and stored there beforehand.
 
 ```{r chunk3, eval=FALSE}
 cleanPOHJE<-function(data){
   datar<-dcast(data,
-               id+datasetid+institutioncode+collectioncode+eventid+datecollected+yearcollected
+               id+data setid+institutioncode+collectioncode+eventid+datecollected+yearcollected
                +monthcollected+daycollected+recordnumber+fieldnumber+decimallongitude+
                  decimallatitude+minimumdepthinmeters+occurrenceid+scientificname+
                  scientificnameid+aphiaid+taxonrank+scientificnameaccepted+
@@ -317,7 +315,7 @@ add_nrep<-function(datarr,fil){
 ```
 ### Calculating abundance and biomass per unit surface
 
-The following code shows how abundance (number per m2), biomass density (different weight systems, g per m2), counts (individuals per sample) and mass (different weight units per sample) are calculated based on the variety of information that may be present in the different files. This calculation is quite error-prone. One of the problems is that it is very difficult to obtain an overview of these very large files. In some datasets a variety of formats occurs, which can easily remain hidden in the very large number of records.
+The following code shows how abundance (number per m2), biomass density (different weight systems, g per m2), counts (individuals per sample) and mass (different weight units per sample) are calculated based on the variety of information that may be present in the different files. This calculation is quite error-prone. One of the problems is that it is very difficult to obtain an overview of these very large files. In some data sets a variety of formats occurs, which can easily remain hidden in the very large number of records.
 
 It would be advisable that all data originators provide their data not only in the original format (e.g. counts per sample, together with area of the sample), but also provide abundance and aerial biomass density data directly to the database. That puts the responsibility for checking these calculations with the people who know the data best. Where counts and sample areas are available, it is of course also advisable to keep these in the database too, as they may be required for some statistical operations and moreover constitute the original observations.
 
@@ -328,7 +326,7 @@ Following BODC, biomass density is expressed as g/m2 and area sampled is express
 sum_avg_param<-function(datarr,fil){
   pp<-names(datarr)
   data_sap<- datarr %>%
-    group_by(datasetid,collectioncode,
+    group_by(data setid,collectioncode,
              datecollected,yearcollected,monthcollected,daycollected,
              decimallongitude,decimallatitude,minimumdepthinmeters,
              sampid,nrep,scientificnameaccepted,
@@ -403,7 +401,7 @@ However, the data files have differences in their basic structure, excluding the
 
 ```{r main_loop, eval=FALSE}
 
-# main loop over the datasets
+# main loop over the data sets
 nds<-length(datfils)
 nams<-substr(datfils,1,regexpr("_",datfils)-1)
 
@@ -519,19 +517,19 @@ for(ds in 1:nds){
 ```
 ### Some conclusions on parsing the data
 
-It is clear from this code that the data files, although already standardized to a fair degree, still have a number of differences that frustrate the machine-based extraction of information. Where it is justified, some difference in structure or content of the files is allowable provided this is internally documented. However, much of the variation presently found does not serve an apparent purpose. 
+While working with these data, a number of problems were encountered. The data files, although already standardized to a fair degree, still have a number of differences that frustrate the machine-based extraction of information. This was highlighted to the DMT (Data Management Team) and it was clarified that the reason behind the lack of uniformity is that some datasets are still in occurrenceCore and others in eventCore (which allows for measurements and facts to be included and properly described in a separate file). After full transition to eventCore inhomogeneities will be removed as much as possible. The present list of difficulties is an input into that process.
 
-Some clean-up actions are purely technical. It is unclear why the area sampled by a grab is given in one dataset in the field samplingeffort as "0,1 m2", in another dataset as "0,1 m²" or "0.1 m2", while in most other datasets it is in Measurements or Facts under parameter "AreaBedSamp (m^2)". MoF with parameter_values given, but the field parameter as "NA" can often be corrected, but if not can better be removed as one does not know what the measurement is.
+Some clean-up actions are purely technical. An important parameter is the area sampled by a grab. It is given in one data set in the field samplingeffort as "0,1 m2", in another data set as "0,1 m²" or "0.1 m2", while in most other data sets it is in Measurements or Facts under parameter "AreaBedSamp (m^2)". MoF with parameter_values given, but the field parameter as "NA" can often be corrected, but if not can better be removed as one does not know what the measurement is.
 
-Other clean-up actions can consist of the removal of some records from the datasets unless they are completed. As an example, there is no point in storing counts per sample if it cannot be retrieved what the size of the samples was. 
+Other clean-up actions can consist of the removal of some records from the data sets unless they are completed. As an example, there is no point in storing counts per sample if it cannot be retrieved what the size of the samples was. 
 
-Clean-up can also consist of rethinking the organisation of the data in datasets. It is questionable if it is a good idea to put all information from one data provider into a single dataset. Why are camera observations without numerical abundance information in MWTL mixed with box core information that provides abundance and (ash-free-dwt) biomass for all species? I propose to be more restrictive in the definition of what constitutes a 'dataset', although some vagueness in the boundaries will probable always remain.
+Clean-up can also consist of rethinking the organisation of the data in data sets. It is questionable if it is a good idea to put all information from one data provider into a single data set. An example is the MWTL data set where camera observations without numerical abundance information are mixed with box core information that provides abundance and (ash-free-dwt) biomass for all species. I propose to be more restrictive in the definition of what constitutes a 'data set', although some vagueness in the boundaries will probable always remain.
 
 Finally, a rethinking of the representation of the basic sampling, replication and subsampling structure is needed. This is currently a large source of uncertainty relying on the correct interpretation of what is in several columns, e.g. eventid, fieldnumber or others.
 
 ## Collecting all data
 
-After casting each of the datasets, all data are collected into a single file.
+After casting each of the data sets, all data are collected into a single file.
 
 ```{r collect-data, eval=FALSE}
 # collect all records and save them
@@ -550,7 +548,7 @@ save(all_recs,file=file.path(dataDir,"all_recs.Rdata"))
 ```
 ## Selecting the species to be plotted
 
-From this raw composed data file, the species suitable for further treatment are selected. As this dataset concentrates on macrozoobenthos, the selection of species attempts to concentrate on this group only. The procedures are identical to what was used in the data product on presence/absence of benthos. We refer to that data product for a description of the procedures.
+From this raw composed data file, the species suitable for further treatment are selected. As this data set concentrates on macrozoobenthos, the selection of species attempts to concentrate on this group only. The procedures are identical to what was used in the data product on presence/absence of benthos. We refer to that data product for a description of the procedures.
 
 ```{r species-selection, eval=FALSE}
 #### SPECIES SELECTION ############
@@ -678,7 +676,7 @@ write_delim(prob6,file.path(dataDir,"specieslist6.csv"),delim=",")
 # list of species of odd taxa that do not really belong in benthos studies
 prob7 <- splst %>% filter (misc_tax & !benthos)
 write_delim(prob7,file.path(dataDir,"specieslist7.csv"),delim=",")
-# list of species found in benthic datasets, but that are not benthos, not fish, not birds, 
+# list of species found in benthic data sets, but that are not benthos, not fish, not birds, 
 # not plants, not micro-organisms, not meiofauna, not plankton and not nekton
 prob8 <- splst %>% filter (!benthos&!Pisces&!Pisces_tax&!Aves_tax&!Plants_tax&!Algae&
                              !micro_tax&!meio_tax&!meiobenthos&!plankton&!nekton) %>%
@@ -703,7 +701,7 @@ sp2use <- splst %>%
 write_delim(sp2use,file.path(dataDir,"sp2use.csv"),delim=",")
 ```
 ## Prepare the data for the production of maps
-After loading the data and the list of species to use, the dataset is filtered to contain only the true macrobenthic species information. Species are ordered in the order of their frequency (number of records with presence) in the data set. Events are defined, across the dataset, as samples that have a unique position in space (coordinates, depth) and time. A square matrix is prepared that contains, in the first columns, information on location, time and event, and then has one column per species with the numerical abundance.
+After loading the data and the list of species to use, the data set is filtered to contain only the true macrobenthic species information. Species are ordered in the order of their frequency (number of records with presence) in the data set. Events are defined, across the data set, as samples that have a unique position in space (coordinates, depth) and time. A square matrix is prepared that contains, in the first columns, information on location, time and event, and then has one column per species with the numerical abundance.
 
 The product of this step is a file with the numerical abundance (including all zeroes) of all species in all samples. This is the basic data product. It is written as a csv file and as a binary file. It will be used in preparing the maps and the interpolations.
 
@@ -722,7 +720,7 @@ splst<-read_delim(file.path(dataDir,"sp2use.csv"),
 ##### filter to true benthic species only
 ##########################################################
 trec<- sbnsc %>% as_tibble() %>%
-  mutate(datasetid=as.numeric(substr(datasetid,65,90))) %>%
+  mutate(data setid=as.numeric(substr(data setid,65,90))) %>%
   filter(!is.na(aphiaidaccepted))%>%
   mutate(tmp=substr(aphiaidaccepted,52,65))%>%
   filter(tmp!="NA")%>%
@@ -740,11 +738,11 @@ nsptoplot<-length(which(spfr$n_events>0))
 ###############################################################
 # make a list of all sampling events
 events<- trec %>% 
-  dplyr::select(datasetid,datecollected,decimallongitude,decimallatitude,minimumdepthinmeters,sampid)%>%
+  dplyr::select(data setid,datecollected,decimallongitude,decimallatitude,minimumdepthinmeters,sampid)%>%
   distinct()%>%
   mutate(eventNummer=row_number())
 trec <- trec %>%
-  left_join(events,by=c("datasetid","datecollected","decimallongitude","decimallatitude",
+  left_join(events,by=c("data setid","datecollected","decimallongitude","decimallatitude",
                         "minimumdepthinmeters","sampid"))
 ############################################################
 # Store trec. This is our first data product!

@@ -66,7 +66,7 @@ RSMP Baseline Dataset (1976 – 2016) 	https://www.emodnet-biology.eu/data-catal
 
 SHARK - Marine soft bottom macrozoobenthos monitoring in Sweden (1971 – 2014) 	https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=2454
 
-Note that a research version of North Sea Benthos Survey was used, as there were problems in the version stored in EMODnet
+Note that a research version of North Sea Benthos Survey was used, as there were problems in the version stored in EMODnet at the time of writing. This problem is discussed with the Data Management Team and will be resolved.
 
 ## Wfs request
 
