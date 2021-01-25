@@ -1,7 +1,7 @@
 ---
 title: Preparation of data product on numerical abundance of benthos in North Sea and Baltic
 author: "Peter M.J. Herman"
-date: "13 January 2021"
+date: "25 January 2021"
 output: pdf_document
 ---
 
@@ -56,27 +56,27 @@ The code also shows the data sets concerned. Note that, apart from these data, a
 ```{r download_and_reconstitute_data, eval=FALSE}
 getdata sets <- data.frame(name=c("Mareano","MWTL","ODAM","POHJE",
                                  "Polish","Puck","Rebent","RSMP","SHARK"),
-                          data setid=c(145,4539,67,5759,4494,5725,2467,611,4412,5922,2454),
+                          datasetid=c(145,4539,67,5759,4494,5725,2467,611,4412,5922,2454),
                           include=c(T,T,T,T,T,T,T,T,T,T,T))
 getdata sets <- getdata sets %>% filter(include)
-for(jj in 1:length(getdata sets$data setid)){
+for(jj in 1:length(getdata sets$datasetid)){
   for(year in 1980:2019){
-    data setid <- getdata sets$data setid[jj]
+    datasetid <- getdata sets$datasetid[jj]
     data setname<-getdata sets$name[jj]
     begindate <- paste0(year,"-01-01")
     enddate   <- paste0(year,"-12-31")
-    print(paste("downloading data for data set",data setname,"ID nr: ", data setid,"year",year))
+    print(paste("downloading data for data set",data setname,"ID nr: ", datasetid,"year",year))
     downloadURL <- paste0(
       "http://geo.vliz.be/geoserver/wfs/ows?service=WFS&version=1.1.0&",
       "request=GetFeature&typeName=Dataportal%3Aeurobis-obisenv&",
-      "resultType=results&viewParams=where%3Adata setid+IN+%28",
-      data setid,
+      "resultType=results&viewParams=where%3Adatasetid+IN+%28",
+      datasetid,
       "%29+AND+%28%28observationdate+BETWEEN+%27",
       begindate,
       "%27+AND+%27",
       enddate,
       "%27+%29%29%3Bcontext%3A0100&propertyName=",
-      "data setid%2C",
+      "datasetid%2C",
       "datecollected%2C",
       "decimallatitude%2C",
       "decimallongitude%2C",
@@ -126,7 +126,7 @@ for(jj in 1:length(getdata sets$data setid)){
       "&outputFormat=csv"
     )
     data <- read_csv(downloadURL) 
-    filename = paste0(data setname,"_",data setid,"_",year,".csv")
+    filename = paste0(data setname,"_",datasetid,"_",year,".csv")
     if(nrow(data) != 0){
       write_delim(data, file.path(downloadDir, filename), delim = ",")
     }
@@ -194,7 +194,7 @@ stand_par_nam<-tibble(oldnam=c("InstrumentSurfaceArea (m^2)"),
 
 do_cast<-function(data,fil){
   datarr<-dcast(data,
-                data setid+institutioncode+collectioncode+eventid+
+                datasetid+institutioncode+collectioncode+eventid+
                   datecollected+yearcollected+
                   monthcollected+daycollected+recordnumber+fieldnumber+decimallongitude+
                   decimallatitude+minimumdepthinmeters+occurrenceid+scientificname+
@@ -258,7 +258,7 @@ Further the function calculates the total area sampled by all replicates togethe
 ```{r chunk3, eval=FALSE}
 cleanPOHJE<-function(data){
   datar<-dcast(data,
-               id+data setid+institutioncode+collectioncode+eventid+datecollected+yearcollected
+               id+datasetid+institutioncode+collectioncode+eventid+datecollected+yearcollected
                +monthcollected+daycollected+recordnumber+fieldnumber+decimallongitude+
                  decimallatitude+minimumdepthinmeters+occurrenceid+scientificname+
                  scientificnameid+aphiaid+taxonrank+scientificnameaccepted+
@@ -326,7 +326,7 @@ Following BODC, biomass density is expressed as g/m2 and area sampled is express
 sum_avg_param<-function(datarr,fil){
   pp<-names(datarr)
   data_sap<- datarr %>%
-    group_by(data setid,collectioncode,
+    group_by(datasetid,collectioncode,
              datecollected,yearcollected,monthcollected,daycollected,
              decimallongitude,decimallatitude,minimumdepthinmeters,
              sampid,nrep,scientificnameaccepted,
@@ -486,11 +486,16 @@ for(ds in 1:nds){
         # In REBENT, there are missing areabedsample values. all of these have been taken with a Smith-McIntyre grab
         # and all the Smith-McIntyre grab samples that do have an area sampled, have 0.1 for this area
         # we replace the NA with 0.1
-        # In addition, in REBENT there are records without a count (mostly algae in quadrats, presence only). We drop these
+        # In addition, in REBENT there are records without a count (mostly algae in quadrats, presence only). 
+        # We drop these
+        # REBENT also contains data in the Caribbean and in the Mediterranean. We filter them out
           if(fil=="REBENT_TOTAL.csv"){
             data2 <- data2 %>%
               mutate (`AreaBedSamp (m^2)`=ifelse(is.na(`AreaBedSamp (m^2)`),0.1,`AreaBedSamp (m^2)`)) %>%
               filter (!is.na(`Count (Dmnless)`))
+            data2 <- data2 %>%
+              filter (decimallongitude > -10) %>%                         # filter out Caribbean
+              filter (! (decimallongitude > 0 & decimallatitude < 45))    # filter out Mediterranean
           }
   
         # use fieldnumber instead of eventid to identify events in SHARK
@@ -573,24 +578,24 @@ splst <- all_recs %>%
 ###### determine, using attributes, which species are benthos #######
 ###### again, several hours download ##########
 ###### (done once, result stored as delimited file)
-nsp_attr<-tibble()
-for(i in 1:nrow(splst)){
-  print(paste(i,"out of",nrow(splst),"downloading attributes of species",
-              splst$scientificnameaccepted[i],"AphiaID",splst$AphiaID[i]))
-  ttt<-NULL
-  try(ttt<-wm_attr_data(id=splst$AphiaID[i],include_inherited = T),silent = T)
-  if(! is.null(ttt)) nsp_attr<-rbind(nsp_attr,ttt[,1:9])
-}
+# nsp_attr<-tibble()
+# for(i in 1:nrow(splst)){
+#   print(paste(i,"out of",nrow(splst),"downloading attributes of species",
+#               splst$scientificnameaccepted[i],"AphiaID",splst$AphiaID[i]))
+#   ttt<-NULL
+#   try(ttt<-wm_attr_data(id=splst$AphiaID[i],include_inherited = T),silent = T)
+#   if(! is.null(ttt)) nsp_attr<-rbind(nsp_attr,ttt[,1:9])
+# }
+# 
+# nsp_attr <- nsp_attr %>%
+#                   mutate(AphiaID=as.numeric(AphiaID)) %>%
+#                   left_join(splst,by="AphiaID")
+# write_delim(nsp_attr,file.path(dataDir,"nsp_attr.csv"),delim=",")
+# save(nsp_attr,file=file.path(dataDir,"nsp_attr.Rdata"))
+# 
+# 
 
-nsp_attr <- nsp_attr %>%
-                  mutate(AphiaID=as.numeric(AphiaID)) %>%
-                  left_join(splst,by="AphiaID")
-write_delim(nsp_attr,file.path(dataDir,"nsp_attr.csv"),delim=",")
-save(nsp_attr,file=file.path(dataDir,"nsp_attr.Rdata"))
-
-
-
-# nsp_attr <- read_delim(file.path(dataDir,"nsp_attr.csv"),delim=",")
+ nsp_attr <- read_delim(file.path(dataDir,"nsp_attr.csv"),delim=",")
 # what Functional groups are there?
 fg <- nsp_attr %>% filter(measurementType=="Functional group") %>% 
   dplyr::select(measurementValue) %>% 
@@ -720,7 +725,7 @@ splst<-read_delim(file.path(dataDir,"sp2use.csv"),
 ##### filter to true benthic species only
 ##########################################################
 trec<- sbnsc %>% as_tibble() %>%
-  mutate(data setid=as.numeric(substr(data setid,65,90))) %>%
+  mutate(datasetid=as.numeric(substr(datasetid,65,90))) %>%
   filter(!is.na(aphiaidaccepted))%>%
   mutate(tmp=substr(aphiaidaccepted,52,65))%>%
   filter(tmp!="NA")%>%
@@ -738,11 +743,11 @@ nsptoplot<-length(which(spfr$n_events>0))
 ###############################################################
 # make a list of all sampling events
 events<- trec %>% 
-  dplyr::select(data setid,datecollected,decimallongitude,decimallatitude,minimumdepthinmeters,sampid)%>%
+  dplyr::select(datasetid,datecollected,decimallongitude,decimallatitude,minimumdepthinmeters,sampid)%>%
   distinct()%>%
   mutate(eventNummer=row_number())
 trec <- trec %>%
-  left_join(events,by=c("data setid","datecollected","decimallongitude","decimallatitude",
+  left_join(events,by=c("datasetid","datecollected","decimallongitude","decimallatitude",
                         "minimumdepthinmeters","sampid"))
 ############################################################
 # Store trec. This is our first data product!
