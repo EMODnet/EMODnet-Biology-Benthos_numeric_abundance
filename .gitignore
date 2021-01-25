@@ -37,8 +37,14 @@ analysis/Old_data_preparation/datafiles/*.*
 docs/problem_reports/*.*
 
 # all the large datafiles
-data/
+data/**/*.RData
+data/**/*.csv
 
 # all products
-product/
+product/*/*.RData
+product/*/*.csv
+product/*/*.tif
+product/*/*.png
 
+# Ignore Thumbs.db
+Thumbs.db

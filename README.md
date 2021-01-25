@@ -36,7 +36,6 @@ Subsequently the data files per dataset are parsed to extract the abundance and 
 └── scripts/
 ```
 
-* **analysis** - The R Markdown document that documents and discusses the code
 * **data** - the containers for data storage. Note that due to the size of the files, no actual data are stored in Github
 * **docs** - Rendered report of the Markdown document
 * **product** - containers for output product files- actually empty because of file size
@@ -156,7 +155,7 @@ Code and methodology are documented in the file ./Assemble_abundances_benthos.Rm
 
 This product should be cited as:
 
-Beauchard, Olivier, Herman, Peter M.J., Fernandez, Salvador. 2021. Data product numerical abundance of benthic macroinvertebrates in North Sea and Baltic Sea. xxxxxx
+*Beauchard, Olivier, Herman, Peter M.J., Fernández-Bejarano, Salvador. 2021. Data product numerical abundance of benthic macroinvertebrates in North Sea and Baltic Sea. Integrated data products created under the European Marine Observation Data Network (EMODnet) Biology project (EASME/EMFF/2017/1.3.1.2/02/SI2.789013), funded by the by the European Union under Regulation (EU) No 508/2014 of the European Parliament and of the Council of 15 May 2014 on the European Maritime and Fisheries Fund.*
 
 Available to download in:
 
@@ -164,4 +163,4 @@ xxxxxx
 
 ### Authors
 
-Olivier Beauchard, Peter M.J. Herman, Salvador Fernandez
+Olivier Beauchard, Peter M.J. Herman, Salvador Fernández Bejarano.
