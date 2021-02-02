@@ -159,7 +159,7 @@ This product should be cited as:
 
 Available to download in:
 
-xxxxxx
+https://www.emodnet-biology.eu/data-catalog?module=dataset&dasid=6648
 
 This link downloads a zip file containing a local copy of this git repository with the data products in the `./product/` subdirectory. The scripts and workflows included in this local git repository may differ from the pipelines included in this remote repository on GitHub as we continue to improve the product. To see the differences between the local copy of the git repository you downloaded and the latest version on GitHub, open the git bash console and type:
 
