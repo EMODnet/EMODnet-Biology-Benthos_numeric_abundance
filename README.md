@@ -161,6 +161,21 @@ Available to download in:
 
 xxxxxx
 
+This link downloads a zip file containing a local copy of this git repository with the data products in the `./product/` subdirectory. The scripts and workflows included in this local git repository may differ from the pipelines included in this remote repository on GitHub as we continue to improve the product. To see the differences between the local copy of the git repository you downloaded and the latest version on GitHub, open the git bash console and type:
+
+```{bash}
+$ git fetch origin master
+$ git diff origin/master
+```
+
+If you want to update the local copy of the git repository you downloaded to the latest development version, run the following line:
+
+```{bash}
+$ git pull
+```
+
+If you are unsure about how to use git, please check the [installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) of the git book: https://git-scm.com/book
+
 ### Authors
 
 Olivier Beauchard, Peter M.J. Herman, Salvador Fernández Bejarano.
